@@ -1,53 +1,72 @@
 import React, { useState } from 'react';
-import { registerUser } from '../api/user';
-import { useUser } from '../context/UserContext';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const Register = () => {
-  const { setUser } = useUser();
-  const [form, setForm] = useState({ username: '', email: '', password: '' });
-  const [status, setStatus] = useState({ loading: false, error: null, success: null });
+  const [formData, setFormData] = useState({
+    username: '',
+    email: '',
+    password: ''
+  });
+
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
+  const { register } = useAuth();
 
   const handleChange = (e) => {
-    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    setFormData(prev => ({
+      ...prev,
+      [e.target.name]: e.target.value
+    }));
   };
 
-  const submit = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setStatus({ loading: true, error: null, success: null });
+    setError('');
     try {
-      if (!form.username || !form.email || !form.password) throw new Error('All fields required');
-      const userDto = await registerUser(form);
-      setUser(userDto);
-      setStatus({ loading: false, success: 'Registered successfully' });
+      await register(formData.username, formData.email, formData.password);
+      navigate('/');
     } catch (err) {
-      setStatus({
-        loading: false,
-        error: err.response?.data?.message || err.message || 'Registration failed',
-      });
+      setError(err.response?.data || 'Registration failed');
     }
   };
 
   return (
-    <div style={{ border: '1px solid #ccc', padding: 16, borderRadius: 6, maxWidth: 400 }}>
+    <div style={{ maxWidth: '400px', margin: '2rem auto', padding: '1rem', border: '1px solid #ccc' }}>
       <h2>Register</h2>
-      {status.error && <div style={{ color: 'red' }}>{status.error}</div>}
-      {status.success && <div style={{ color: 'green' }}>{status.success}</div>}
-      <form onSubmit={submit}>
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         <div>
-          <label>Username</label><br />
-          <input name="username" value={form.username} onChange={handleChange} required />
+          <label>Email</label>
+          <input
+            name="email"
+            type="email"
+            value={formData.email}
+            onChange={handleChange}
+            required
+          />
         </div>
         <div>
-          <label>Email</label><br />
-          <input name="email" type="email" value={form.email} onChange={handleChange} required />
+          <label>Username</label>
+          <input
+            name="username"
+            type="text"
+            value={formData.username}
+            onChange={handleChange}
+            required
+          />
         </div>
         <div>
-          <label>Password</label><br />
-          <input name="password" type="password" value={form.password} onChange={handleChange} required />
+          <label>Password</label>
+          <input
+            name="password"
+            type="password"
+            value={formData.password}
+            onChange={handleChange}
+            required
+          />
         </div>
-        <button type="submit" disabled={status.loading}>
-          {status.loading ? 'Registering...' : 'Register'}
-        </button>
+        <button type="submit">Register</button>
+        {error && <p style={{ color: 'red' }}>{error}</p>}
       </form>
     </div>
   );

@@ -1,19 +1,33 @@
-import React from 'react';
-import Register from './components/register';
-import UserLookup from './components/UserLookup';
-import { UserProvider } from './context/UserContext';
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import Login from "./components/Login";
+import AdminDashboard from "./pages/AdminDashboard";
+import UserDashboard from "./pages/UserDashboard";
+import PrivateRoute from "./components/PrivateRoute";
 
 function App() {
   return (
-    <UserProvider>
-      <div style={{ padding: 24, fontFamily: 'system-ui, sans-serif' }}>
-        <h1>DigiMart User</h1>
-        <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap' }}>
-          <Register />
-          <UserLookup />
-        </div>
-      </div>
-    </UserProvider>
+    <Router>
+      <Routes>
+        <Route path="/" element={<Login />} />
+
+        <Route
+          path="/admin"
+          element={
+            <PrivateRoute role="ADMIN">
+              <AdminDashboard />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/user"
+          element={
+            <PrivateRoute role="USER">
+              <UserDashboard />
+            </PrivateRoute>
+          }
+        />
+      </Routes>
+    </Router>
   );
 }
 
