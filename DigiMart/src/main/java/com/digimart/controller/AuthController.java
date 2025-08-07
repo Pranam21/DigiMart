@@ -18,7 +18,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.digimart.dto.LoginDto;
 import com.digimart.dto.UserDto;
-import com.digimart.security.JwtUtil;
+import com.digimart.security.JwtService;
+
 import com.digimart.service.UserService;
 
 @RestController
@@ -36,7 +37,7 @@ public class AuthController {
     private AuthenticationManager authenticationManager;
 
     @Autowired
-    private JwtUtil jwtUtil;
+    private JwtService jwtService;
 
     @PostMapping("/register")
     public ResponseEntity<UserDto> register(@RequestBody UserDto userDto) {
@@ -79,7 +80,7 @@ public class AuthController {
 
             UserDto found = userService.getUserByEmail(loginDto.getEmail());
 
-            String token = jwtUtil.generateToken(
+            String token = jwtService.generateToken(
                 found.getEmail(),
                 Collections.singletonList(found.getRoles().name())
             );

@@ -19,12 +19,7 @@ public class UserController {
     @Autowired
     private UserService userService;
 
-    // ✅ API: Register a new user
-    @PostMapping("/register")
-    public ResponseEntity<UserDto> registerUser(@RequestBody UserDto userDto) {
-        UserDto registeredUser = userService.registerUser(userDto);
-        return ResponseEntity.ok(registeredUser);
-    }
+    
 
     // ✅ API: Get user details by email
     @GetMapping("/{email}")

@@ -19,23 +19,27 @@ const Login = () => {
       });
 
       const token = res.data.token;
+      if (!token) throw new Error("Token not received");
 
-      // Decode JWT to get role
+      // Decode token to extract role
       const decoded = JSON.parse(atob(token.split('.')[1]));
-      console.log("Decoded Token:", decoded);
-      const role = Array.isArray(decoded.roles) ? decoded.roles[0] : decoded.roles;//getting the first role from list returned by backend
-      console.log("Extracted Role:", role);
+      const role = Array.isArray(decoded.roles) ? decoded.roles[0] : decoded.roles;
 
+      // Store token and role
       localStorage.setItem('token', token);
       localStorage.setItem('role', role);
 
+      // Redirect based on role
       if (role === "ADMIN") {
         navigate("/admin");
       } else {
         navigate("/user");
       }
+
     } catch (err) {
-      setError(err.response?.data?.error || 'Login failed');
+      console.error(err);
+      const message = err.response?.data?.error || 'Login failed. Please check your credentials.';
+      setError(message);
     }
   };
 

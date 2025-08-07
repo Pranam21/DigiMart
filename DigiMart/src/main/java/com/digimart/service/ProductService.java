@@ -9,4 +9,5 @@ public interface ProductService {
     List<ProductDto> getAllProducts();
     ProductDto getProductById(Long id);
     void deleteProduct(Long id);
+    void attachFileToProduct(Long productId, String fileName);
 }

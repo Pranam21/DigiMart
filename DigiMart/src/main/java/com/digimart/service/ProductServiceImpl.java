@@ -68,4 +68,12 @@ public class ProductServiceImpl implements ProductService {
     public void deleteProduct(Long id) {
         productRepository.deleteById(id);
     }
+    
+    public void attachFileToProduct(Long productId, String fileName) {
+        Product product = productRepository.findById(productId)
+            .orElseThrow(() -> new RuntimeException("Product not found"));
+
+        product.setName(fileName);
+        productRepository.save(product);
+    }
 }
