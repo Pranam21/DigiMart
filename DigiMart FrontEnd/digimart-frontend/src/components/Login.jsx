@@ -1,69 +1,114 @@
-import { useState } from 'react';
-import axios from 'axios';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { jwtDecode } from 'jwt-decode'; // make sure to install this: npm install jwt-decode
 
 const Login = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const { login } = useAuth();
 
-  const handleLogin = async (e) => {
+  const handleChange = (e) => {
+    setFormData(prev => ({
+      ...prev,
+      [e.target.name]: e.target.value
+    }));
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-
     try {
-      const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/auth/login`, {
-        email,
-        password
-      });
+      const token = await login(formData.email, formData.password);
 
-      const token = res.data.token;
-      if (!token) throw new Error("Token not received");
-
-      // Decode token to extract role
-      const decoded = JSON.parse(atob(token.split('.')[1]));
+      // Decode JWT to extract role
+      const decoded = jwtDecode(token);
       const role = Array.isArray(decoded.roles) ? decoded.roles[0] : decoded.roles;
 
-      // Store token and role
-      localStorage.setItem('token', token);
+      // Store role for later use
       localStorage.setItem('role', role);
 
       // Redirect based on role
-      if (role === "ADMIN") {
-        navigate("/admin");
+      if (role === 'ADMIN') {
+        navigate('/admin');
       } else {
-        navigate("/user");
+        navigate('/home');
       }
 
     } catch (err) {
-      console.error(err);
-      const message = err.response?.data?.error || 'Login failed. Please check your credentials.';
-      setError(message);
+      setError(err.response?.data || 'Login failed');
     }
   };
 
   return (
-    <div className="login-container">
-      <h2>Login to DigiMart</h2>
-      <form onSubmit={handleLogin}>
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        /><br />
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        /><br />
-        <button type="submit">Login</button>
-        {error && <p style={{ color: 'red' }}>{error}</p>}
+    <div
+      className="card"
+      style={{
+        maxWidth: '400px',
+        margin: '3rem auto',
+        padding: '2rem 2.5rem',
+        boxShadow: '0 2px 16px rgba(60,72,88,0.08)',
+        border: 'none',
+        borderRadius: '18px',
+        background: 'linear-gradient(120deg, #f8fafc 0%, #e0e7ff 100%)'
+      }}
+    >
+      <h2 style={{ textAlign: 'center', color: '#6366f1', marginBottom: '1.5rem', fontWeight: 800 }}>Login</h2>
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+        <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+          <label htmlFor="email" style={{ fontWeight: 500, color: '#475569' }}>Email</label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            value={formData.email}
+            onChange={handleChange}
+            required
+            style={{ padding: '0.6em', borderRadius: 4, border: '1px solid #cbd5e1', fontSize: '1em' }}
+          />
+        </div>
+        <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+          <label htmlFor="password" style={{ fontWeight: 500, color: '#475569' }}>Password</label>
+          <input
+            id="password"
+            name="password"
+            type="password"
+            value={formData.password}
+            onChange={handleChange}
+            required
+            style={{ padding: '0.6em', borderRadius: 4, border: '1px solid #cbd5e1', fontSize: '1em' }}
+          />
+        </div>
+        <button
+          type="submit"
+          style={{
+            background: 'linear-gradient(90deg, #6366f1 0%, #60a5fa 100%)',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '6px',
+            padding: '0.7em 1.8em',
+            fontSize: '1.1em',
+            cursor: 'pointer',
+            marginTop: '0.5em',
+            fontWeight: 600,
+            boxShadow: '0 2px 8px rgba(99,102,241,0.08)',
+            transition: 'background 0.2s'
+          }}
+        >
+          Login
+        </button>
+        {error && <p className="error" style={{ color: '#e11d48', textAlign: 'center', marginTop: '0.5em' }}>{error}</p>}
       </form>
+      <div style={{ textAlign: 'center', marginTop: '1.5em', color: '#475569', fontSize: '0.98em' }}>
+        Don't have an account?{' '}
+        <span
+          style={{ color: '#6366f1', cursor: 'pointer', fontWeight: 600 }}
+          onClick={() => navigate('/register')}
+        >
+          Register
+        </span>
+      </div>
     </div>
   );
 };

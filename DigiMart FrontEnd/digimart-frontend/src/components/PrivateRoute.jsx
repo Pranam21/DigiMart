@@ -1,22 +1,44 @@
-import { Navigate } from "react-router-dom";
-import { jwtDecode } from "jwt-decode";
+// src/components/PrivateRoute.jsx
+import { Navigate, useLocation } from 'react-router-dom';
+import { jwtDecode } from 'jwt-decode';
 
-const PrivateRoute = ({ children, role }) => {
-  const token = localStorage.getItem("token");
+const PrivateRoute = ({ children, requiredRole }) => {
+  const location = useLocation();
+  const token = localStorage.getItem('token');
 
-  if (!token) return <Navigate to="/" />;
+  if (!token) {
+    console.warn("No token found — redirecting to login");
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
 
   try {
     const decoded = jwtDecode(token);
-    const userRole = decoded.roles?.[0]; // Assuming roles is an array
+    const exp = decoded.exp * 1000;
+    const now = Date.now();
 
-    if (userRole === role) {
-      return children;
-    } else {
-      return <Navigate to="/" />;
+    // Expired
+    if (exp < now) {
+      console.warn("Token expired — redirecting to login");
+      localStorage.clear();
+      return <Navigate to="/login" state={{ from: location }} replace />;
     }
-  } catch (e) {
-    return <Navigate to="/" />;
+
+    const rawRoles = decoded.roles;
+    const userRoles = Array.isArray(rawRoles) ? rawRoles : [rawRoles];
+
+    console.log("Decoded roles:", userRoles);
+    console.log("Required role:", requiredRole);
+
+    if (requiredRole && !userRoles.includes(requiredRole)) {
+      console.warn("Unauthorized — role mismatch");
+      return <Navigate to="/" replace />;
+    }
+
+    return children;
+  } catch (error) {
+    console.error("JWT decoding failed:", error);
+    localStorage.clear();
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 };
 

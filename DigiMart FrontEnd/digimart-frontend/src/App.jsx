@@ -1,33 +1,45 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Login from "./components/Login";
-import AdminDashboard from "./pages/AdminDashboard";
-import UserDashboard from "./pages/UserDashboard";
-import PrivateRoute from "./components/PrivateRoute";
+import { Routes, Route } from 'react-router-dom';
+import LandingPage from './pages/LandingPage';
+import Login from './components/Login';
+import HomePage from './pages/HomePage';
+import AdminPage from './pages/AdminDashboard';
+import PrivateRoute from './components/PrivateRoute';
+import UserHome from './pages/UserHome';
+import Register from './components/register';
+import UploadPage from './pages/UploadPage';
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Login />} />
-
-        <Route
-          path="/admin"
-          element={
-            <PrivateRoute role="ADMIN">
-              <AdminDashboard />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/user"
-          element={
-            <PrivateRoute role="USER">
-              <UserDashboard />
-            </PrivateRoute>
-          }
-        />
-      </Routes>
-    </Router>
+    <Routes>
+      <Route path="/" element={<LandingPage />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+      
+      {/* Protect home and admin */}
+      <Route
+        path="/home"
+        element={
+          <PrivateRoute requiredRole="USER">
+            <UserHome />
+           </PrivateRoute>
+        }
+      />
+      
+      <Route path="/admin" element={
+         <PrivateRoute requiredRole ="ADMIN">
+          <AdminPage />
+         </PrivateRoute>
+      } />
+      <Route
+  path="/upload"
+  element={
+    <PrivateRoute requiredRole="USER">
+      <UploadPage />
+    </PrivateRoute>
+  }
+/>
+    </Routes>
+    
   );
 }
 

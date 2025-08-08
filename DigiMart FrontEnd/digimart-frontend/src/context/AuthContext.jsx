@@ -1,6 +1,7 @@
+// src/context/AuthContext.jsx
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { jwtDecode } from 'jwt-decode'; // ✅ Correct named import
 import axios from 'axios';
+import { jwtDecode } from 'jwt-decode';
 
 const AuthContext = createContext();
 
@@ -11,40 +12,34 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     if (token) {
       try {
-        const decodedUser = jwtDecode(token);
-        setUser(decodedUser);
+        const decoded = jwtDecode(token);
+        setUser(decoded);
         axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      } catch (error) {
-        console.error('Invalid token:', error);
+      } catch (err) {
+        console.error("Invalid token", err);
         logout();
       }
     }
   }, [token]);
 
   const login = async (email, password) => {
-    try {
-      const res = await axios.post('http://localhost:8080/api/auth/login', { email, password });
-      const newToken = res.data.token;
-      localStorage.setItem('token', newToken);
-      setToken(newToken);
-    } catch (error) {
-      throw error;
-    }
+    const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/auth/login`, {
+      email,
+      password
+    });
+
+    const token = response.data.token;
+    if (!token) throw new Error("No token received");
+
+    localStorage.setItem('token', token);
+    return token; // 🔥 RETURN THE TOKEN HERE
   };
 
   const register = async (username, email, password) => {
-    try {
-      const res = await axios.post('http://localhost:8080/api/auth/register', {
-        username,
-        email,
-        password
-      });
-      const newToken = res.data.token;
-      localStorage.setItem('token', newToken);
-      setToken(newToken);
-    } catch (error) {
-      throw error;
-    }
+    const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/auth/register`, { username, email, password });
+    const newToken = res.data.token;
+    setToken(newToken);
+    localStorage.setItem('token', newToken);
   };
 
   const logout = () => {

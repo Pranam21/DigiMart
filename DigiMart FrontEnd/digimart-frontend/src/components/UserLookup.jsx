@@ -23,25 +23,26 @@ const UserLookup = () => {
   };
 
   return (
-    <div style={{ border: '1px solid #ccc', padding: 16, borderRadius: 6, maxWidth: 400 }}>
-      <h2>Lookup User</h2>
+    <div className="card" style={{ maxWidth: 400, margin: '2em auto' }}>
+      <h2 style={{ textAlign: 'center', marginBottom: '1em' }}>Lookup User</h2>
       <form onSubmit={submit}>
-        <div>
+        <div className="form-group input-group" style={{ display: 'flex', gap: '0.5em' }}>
           <input
             type="email"
             placeholder="user@example.com"
             value={email}
             onChange={e => setEmail(e.target.value)}
             required
+            style={{ flex: 1 }}
           />
           <button type="submit" disabled={loading}>
             {loading ? 'Searching...' : 'Search'}
           </button>
         </div>
       </form>
-      {error && <div style={{ color: 'red' }}>{error}</div>}
+      {error && <div className="error" style={{ color: '#e11d48', marginTop: 8 }}>{error}</div>}
       {user && (
-        <div style={{ marginTop: 12, background: '#ADD8E6', padding: 8, borderRadius: 4 }}>
+        <div className="card" style={{ marginTop: 16, background: '#f1f5f9', padding: 12 }}>
           <p><strong>ID:</strong> {user.id}</p>
           <p><strong>Username:</strong> {user.username}</p>
           <p><strong>Email:</strong> {user.email}</p>
