@@ -2,6 +2,9 @@ package com.digimart.service;
 
 import com.digimart.dto.*;
 import com.digimart.entities.*;
+
+import jakarta.transaction.Transactional;
+
 import com.digimart.Repository.FileMetadataRepository;
 import com.digimart.Repository.PurchaseRepository;
 import com.digimart.Repository.UserRepository;
@@ -12,7 +15,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.nio.file.*;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class FileStorageServiceImpl implements FileStorageService {
@@ -38,40 +43,66 @@ public class FileStorageServiceImpl implements FileStorageService {
     }
 
     @Override
+    @Transactional
     public FileUploadResponseDto uploadFile(FileUploadRequestDto requestDto, String userEmail) throws IOException {
         MultipartFile file = requestDto.getFile();
         String originalName = file.getOriginalFilename();
         String fileType = file.getContentType();
-        Long size = file.getSize();
+        long size = file.getSize();
         String fileName = UUID.randomUUID() + "_" + originalName;
+        Double cost = requestDto.getPrice();
 
+        // Store on disk
         Path target = this.fileStorageLocation.resolve(fileName);
         Files.copy(file.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
 
-        User user = userRepository.findByEmail(userEmail).orElseThrow();
+        // Find uploader
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("User not found: " + userEmail));
 
+        // --- 1) Save to FILES table ---
+        FileEntity fileEntity = new FileEntity();
+        fileEntity.setTitle(originalName); // using filename as title for now
+        fileEntity.setDescription(null);   // no description in DTO
+        fileEntity.setFilename(fileName);
+        fileEntity.setFileType(fileType);
+        fileEntity.setFileSize(size);
+        fileEntity.setPrice(cost);          // no price in DTO, default to 0
+        fileEntity.setUploader(user);
+
+        fileEntity = fileRepository.save(fileEntity); // ID generated here
+
+        // --- 2) Save to FILE_METADATA table ---
         FileMetadata meta = new FileMetadata();
         meta.setFileName(fileName);
         meta.setOriginalFileName(originalName);
         meta.setFileType(fileType);
         meta.setFileSize(size);
         meta.setUploadedBy(user);
-        meta.setDownloadUrl("/api/files/download/" + fileName);
+        meta.setDownloadUrl("/api/files/" + fileEntity.getId() + "/download");
 
         fileMetadataRepository.save(meta);
 
-        return new FileUploadResponseDto(fileName, meta.getDownloadUrl(), fileType, size);
+        // --- 3) Return response ---
+        return new FileUploadResponseDto(
+                meta.getFileName(),
+                meta.getDownloadUrl(),
+                fileType,
+                size
+        );
     }
+
+
 
     @Override
     public FileDownloadResponseDto downloadFile(Long fileId) throws IOException {
-        FileMetadata file = fileMetadataRepository.findById(fileId)
+        FileEntity file = fileRepository.findById(fileId)
                 .orElseThrow(() -> new RuntimeException("File not found"));
 
-        Path path = fileStorageLocation.resolve(file.getFileName()).normalize();
+        Path path = fileStorageLocation.resolve(file.getFilename()).normalize();
         byte[] data = Files.readAllBytes(path);
 
-        return new FileDownloadResponseDto(data, file.getFileType(), file.getOriginalFileName());
+        return new FileDownloadResponseDto(data, file.getFileType(), file.getTitle());
     }
 
     @Override
@@ -84,5 +115,19 @@ public class FileStorageServiceImpl implements FileStorageService {
         }
 
         return purchaseRepository.existsByBuyerEmailAndFileId(userEmail, fileId);
+    }
+    
+    @Override
+    public List<FileListItemDto> listFiles(String currentUserEmail) {
+        return fileMetadataRepository.findAll().stream()
+            .map(meta -> FileListItemDto.builder()
+                .id(meta.getId())
+                .originalFilename(meta.getOriginalFileName())
+                .uploaderEmail(meta.getUploadedBy() != null ? meta.getUploadedBy().getEmail() : null)
+                .size(meta.getFileSize())
+                .fileType(meta.getFileType())
+                .canDownload(hasAccessToFile(meta.getId(), currentUserEmail))
+                .build())
+            .collect(Collectors.toList());
     }
 }

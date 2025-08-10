@@ -1,7 +1,7 @@
-// src/pages/UserHome.jsx
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const readableSize = (bytes = 0) => {
   if (!bytes || bytes <= 0) return '—';
@@ -27,6 +27,7 @@ const UserHome = () => {
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
   const navigate = useNavigate();
+  const { logout } = useAuth();
 
   const API = import.meta.env.VITE_API_BASE_URL; // e.g. http://localhost:8080/api
   const token = localStorage.getItem('token');
@@ -38,6 +39,7 @@ const UserHome = () => {
       const res = await axios.get(`${API}/files/show`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      console.log('files fetched');
       setFiles(res.data || []);
     } catch (e) {
       setErr(e.response?.data || 'Failed to load files');
@@ -131,23 +133,45 @@ const UserHome = () => {
               Browse, purchase, and download digital products.
             </p>
           </div>
-          <button
-            onClick={() => navigate('/upload')}
-            style={{
-              background: 'linear-gradient(90deg, #6366f1 0%, #60a5fa 100%)',
-              color: '#fff',
-              border: 'none',
-              borderRadius: '8px',
-              padding: '0.7em 2em',
-              fontSize: '1.08em',
-              fontWeight: 600,
-              cursor: 'pointer',
-              boxShadow: '0 2px 8px rgba(99,102,241,0.10)',
-              transition: 'background 0.2s'
-            }}
-          >
-            <span role="img" aria-label="upload">📤</span> Upload Product
-          </button>
+          <div style={{ display: 'flex', gap: '1em' }}>
+            <button
+              onClick={() => navigate('/upload')}
+              style={{
+                background: 'linear-gradient(90deg, #6366f1 0%, #60a5fa 100%)',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '0.7em 2em',
+                fontSize: '1.08em',
+                fontWeight: 600,
+                cursor: 'pointer',
+                boxShadow: '0 2px 8px rgba(99,102,241,0.10)',
+                transition: 'background 0.2s'
+              }}
+            >
+              <span role="img" aria-label="upload">📤</span> Upload Product
+            </button>
+            <button
+              onClick={() => {
+                logout();
+                navigate('/login');
+              }}
+              style={{
+                background: 'linear-gradient(90deg, #e11d48 0%, #f472b6 100%)',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '0.7em 2em',
+                fontSize: '1.08em',
+                fontWeight: 600,
+                cursor: 'pointer',
+                boxShadow: '0 2px 8px rgba(225,29,72,0.10)',
+                transition: 'background 0.2s'
+              }}
+            >
+              <span role="img" aria-label="logout">🚪</span> Logout
+            </button>
+          </div>
         </div>
       </div>
 

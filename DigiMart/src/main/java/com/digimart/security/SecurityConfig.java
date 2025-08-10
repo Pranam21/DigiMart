@@ -30,11 +30,12 @@ public class SecurityConfig {
             .cors(Customizer.withDefaults())  // ✅ modern replacement for .cors().and()
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
+            	.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers(
                     "/api/auth/login",
                     "/api/auth/register"
                 ).permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/files/show").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/files/show").hasAnyRole("USER","ADMIN")
                 .anyRequest().authenticated()
             ).addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);;
 

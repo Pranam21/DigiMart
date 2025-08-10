@@ -1,19 +1,16 @@
 package com.digimart.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+//com.digimart.dto.FileResponseDto
+import lombok.*;
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class FileResponseDto {
-    private Long id;
-    private String title;              // original file name
-    private String fileType;
-    private Long size;                // in bytes
-    private String uploadedBy;        // email or username
-    private Double price;
-    private String downloadUrl;       // optional, returned only if user has access
-    private boolean owned;            // true if purchased or uploaded by current user
+ private Long id;
+ private String title;          // map from original filename if you don’t have productName yet
+ private String uploadedBy;     // uploader email
+ private String fileType;       // MIME
+ private Long size;             // bytes
+ private String downloadUrl;    // /api/files/download/{id}
+ private Double price;         // if not yet stored, set null or 0
+ private boolean owned;         // uploader or purchased
 }

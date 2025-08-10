@@ -8,4 +8,6 @@ import java.util.List;
 
 public interface FileService {
     List<FileResponseDto> getAllFiles(); // ✅ must match exactly
+
+    List<FileResponseDto> getAllFilesForUser(String email);
 }

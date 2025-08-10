@@ -43,7 +43,7 @@ public class PurchaseServiceImpl implements PurchaseService {
         Purchase purchase = new Purchase();
         purchase.setBuyer(user);
         purchase.setFile(file);
-        purchase.setPurchaseTime(LocalDateTime.now());
+        purchase.setPurchasedAt(LocalDateTime.now());
 
         purchaseRepository.save(purchase);
     }
@@ -61,12 +61,14 @@ public class PurchaseServiceImpl implements PurchaseService {
                     return new FileResponseDto(
                             file.getId(),
                             file.getTitle(),
+                            file.getUploader().getEmail(),
                             file.getFileType(),
                             file.getFileSize(),
-                            file.getUploader().getEmail(),
-                            file.getPrice(),
                             "/api/files/download/" + file.getId(),
+                            file.getPrice(),
                             true // owned
+                            
+                            
                     );
                 })
                 .toList();

@@ -1,6 +1,11 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 export default function AdminPage() {
+  const navigate = useNavigate();
+  const { logout } = useAuth();
+
   return (
     <div
       className="card"
@@ -15,6 +20,28 @@ export default function AdminPage() {
         padding: '2.5em 2em'
       }}
     >
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1em' }}>
+        <button
+          onClick={() => {
+            logout();
+            navigate('/login');
+          }}
+          style={{
+            background: 'linear-gradient(90deg, #e11d48 0%, #f472b6 100%)',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '8px',
+            padding: '0.6em 1.5em',
+            fontSize: '1em',
+            fontWeight: 600,
+            cursor: 'pointer',
+            boxShadow: '0 2px 8px rgba(225,29,72,0.10)',
+            transition: 'background 0.2s'
+          }}
+        >
+          <span role="img" aria-label="logout">🚪</span> Logout
+        </button>
+      </div>
       <h1
         style={{
           marginBottom: '0.5em',

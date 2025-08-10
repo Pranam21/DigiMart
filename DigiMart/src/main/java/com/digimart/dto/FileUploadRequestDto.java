@@ -9,5 +9,7 @@ import org.springframework.web.multipart.MultipartFile;
 @AllArgsConstructor
 public class FileUploadRequestDto {
     private MultipartFile file;
+    
+    private Double price;
 }
 

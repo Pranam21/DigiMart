@@ -38,6 +38,8 @@ function App() {
     </PrivateRoute>
   }
 />
+
+
     </Routes>
     
   );

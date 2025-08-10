@@ -29,38 +29,52 @@ public class FileController {
     @Autowired
     private JwtService jwtService;
     
-    @GetMapping("/files/show")
-    public ResponseEntity<List<FileResponseDto>> getAllFiles() {
-        List<FileResponseDto> files = fileService.getAllFiles();
-        return ResponseEntity.ok(files);
+//    @GetMapping
+//    public List<FileResponseDto> getAllFiles() {
+//        return fileService.getAllFiles(); // Make sure this returns *all* for now
+//    }
+    
+    @GetMapping
+    public ResponseEntity<List<FileListItemDto>> listFiles(@AuthenticationPrincipal UserDetails user) {
+        String email = user.getUsername();
+        return ResponseEntity.ok(fileStorageService.listFiles(email));
+    }
+    
+    @GetMapping("/show")
+    public ResponseEntity<List<FileResponseDto>> showFiles(
+            @RequestHeader("Authorization") String authHeader) {
+        String token = authHeader.replace("Bearer ", "").trim();
+        String email = jwtService.extractUsername(token);
+        return ResponseEntity.ok(fileService.getAllFilesForUser(email));
     }
     
     
     @PostMapping("/upload")
-    public ResponseEntity<FileUploadResponseDto> uploadFile(@RequestParam("file") MultipartFile file,
+    public ResponseEntity<FileUploadResponseDto> uploadFile(@RequestParam("file") MultipartFile file, Double price, 
                                                              @AuthenticationPrincipal UserDetails userDetails) throws IOException {
-        FileUploadRequestDto requestDto = new FileUploadRequestDto(file);
+        FileUploadRequestDto requestDto = new FileUploadRequestDto(file, price);
         FileUploadResponseDto response = fileStorageService.uploadFile(requestDto, userDetails.getUsername());
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/download/{fileId}")
-    public ResponseEntity<byte[]> downloadFile(@PathVariable Long fileId,
-                                               @RequestHeader("Authorization") String authHeader) throws IOException {
-        String token = authHeader.replace("Bearer ", "");
-        String userEmail = jwtService.extractUsername(token);
-
-        if (!fileStorageService.hasAccessToFile(fileId, userEmail)) {
+    @GetMapping("/download/{id}")
+    public ResponseEntity<Resource> download(@PathVariable Long id,
+                                             @AuthenticationPrincipal UserDetails user) throws IOException {
+        if (!fileStorageService.hasAccessToFile(id, user.getUsername())) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
-        FileDownloadResponseDto dto = fileStorageService.downloadFile(fileId);
+        FileDownloadResponseDto dto = fileStorageService.downloadFile(id);
+        ByteArrayResource resource = new ByteArrayResource(dto.getFileData());
 
         return ResponseEntity.ok()
-                .contentType(MediaType.parseMediaType(dto.getContentType()))
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + dto.getOriginalFileName() + "\"")
-                .body(dto.getFileData());
+            .contentType(MediaType.parseMediaType(dto.getContentType() != null ? dto.getContentType() : "application/octet-stream"))
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + dto.getOriginalFileName() + "\"")
+            .contentLength(dto.getFileData().length)
+            .body(resource);
     }
+    
+    
 
 
 }

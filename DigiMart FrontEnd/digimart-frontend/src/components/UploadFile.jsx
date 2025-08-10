@@ -13,6 +13,7 @@ const UploadFile = ({ productId }) => {
 
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('price', price);
 
     const token = localStorage.getItem('token');
 
