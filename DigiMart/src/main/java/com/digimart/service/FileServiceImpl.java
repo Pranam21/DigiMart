@@ -47,6 +47,7 @@ public class FileServiceImpl implements FileService {
                     .uploadedBy(m.getUploadedBy() != null ? m.getUploadedBy().getEmail() : null)
                     .fileType(m.getFileType())
                     .size(m.getFileSize())
+                    .price(m.getPrice())
                     .downloadUrl("/api/files/download/" + m.getId())
                                      // if available
                     .owned(isOwner || hasPurchased)

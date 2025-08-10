@@ -15,4 +15,5 @@ public class FileUploadResponseDto {
     private String downloadUrl;
     private String fileType;
     private Long size;
+    private double price;
 }

@@ -26,11 +26,32 @@ const UserHome = () => {
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
+  const [username, setUsername] = useState('');
   const navigate = useNavigate();
   const { logout } = useAuth();
 
-  const API = import.meta.env.VITE_API_BASE_URL; // e.g. http://localhost:8080/api
+  const API = import.meta.env.VITE_API_BASE_URL;
   const token = localStorage.getItem('token');
+
+  useEffect(() => {
+    if (!token) {
+      navigate('/login');
+      return;
+    }
+    
+    // Extract username from token
+    try {
+      const decoded = JSON.parse(atob(token.split('.')[1]));
+      const email = decoded.sub;
+      setUsername(email.split('@')[0]); // extract name from email
+    } catch (error) {
+      console.error('Error decoding token:', error);
+    }
+    
+    fetchFiles();
+    
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const fetchFiles = async () => {
     try {
@@ -48,42 +69,30 @@ const UserHome = () => {
     }
   };
 
-  useEffect(() => {
-    if (!token) {
-      navigate('/login');
-      return;
-    }
-    fetchFiles();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const handlePurchase = async (fileId) => {
-    try {
-      setMsg('');
-      setErr('');
-      await axios.post(`${API}/purchase/${fileId}`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setMsg('Purchase successful! You can download it now.');
-      await fetchFiles(); // refresh ownership flags
-    } catch (e) {
-      setErr(e.response?.data || 'Purchase failed');
-    }
+  // ⬇️ CHANGED: redirect to mock payment page instead of purchasing immediately
+  const handlePurchase = (fileId) => {
+    setMsg('');
+    setErr('');
+    navigate(`/payment/${fileId}`);
   };
 
-  const handleDownload = async (downloadUrl, fallbackId) => {
+  const handleDownload = async (downloadUrl, id) => {
     try {
       setErr('');
-      // Prefer downloadUrl from API; fallback to standard route if not provided
-      const urlPath = downloadUrl || `/files/download/${fallbackId}`;
-      const res = await axios.get(`${API}${urlPath}`, {
+      const res = await axios.get(`${API}/files/download/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
         responseType: 'blob'
       });
+
+      // Optional: use filename from Content-Disposition
+      const dispo = res.headers['content-disposition'] || '';
+      const match = dispo.match(/filename="?([^"]+)"?/);
+      const filename = match?.[1] || 'file';
+
       const blobUrl = window.URL.createObjectURL(new Blob([res.data]));
       const a = document.createElement('a');
       a.href = blobUrl;
-      a.download = 'file'; // you can set from header filename if backend sends it
+      a.download = filename;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -94,250 +103,450 @@ const UserHome = () => {
   };
 
   return (
-    <div
-      className="card"
-      style={{
-        maxWidth: '1200px',
-        margin: '3em auto',
-        padding: '2.5em 2em',
-        background: 'linear-gradient(120deg, #f8fafc 0%, #e0e7ff 100%)',
-        boxShadow: '0 4px 32px rgba(99,102,241,0.10)',
-        border: 'none',
-        borderRadius: '18px'
-      }}
-    >
-      {/* Header */}
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #2c3e50 0%, #34495e 20%, #3b4d61 40%, #455a75 60%, #4f6989 80%, #5a789d 100%)',
+      backgroundSize: '400% 400%',
+      animation: 'gradientShift 15s ease infinite',
+      position: 'relative',
+      overflow: 'hidden'
+    }}>
+      {/* Animated background elements */}
       <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '0.5em',
-        marginBottom: '2em'
-      }}>
+        position: 'absolute',
+        top: '10%',
+        left: '10%',
+        width: '300px',
+        height: '300px',
+        background: 'radial-gradient(circle, rgba(44,62,80,0.2) 0%, transparent 70%)',
+        borderRadius: '50%',
+        animation: 'float 6s ease-in-out infinite'
+      }}></div>
+      <div style={{
+        position: 'absolute',
+        top: '60%',
+        right: '15%',
+        width: '200px',
+        height: '200px',
+        background: 'radial-gradient(circle, rgba(52,73,94,0.15) 0%, transparent 70%)',
+        borderRadius: '50%',
+        animation: 'float 8s ease-in-out infinite reverse'
+      }}></div>
+      <div style={{
+        position: 'absolute',
+        bottom: '20%',
+        left: '30%',
+        width: '150px',
+        height: '150px',
+        background: 'radial-gradient(circle, rgba(69,90,117,0.18) 0%, transparent 70%)',
+        borderRadius: '50%',
+        animation: 'float 10s ease-in-out infinite'
+      }}></div>
+
+      <style>
+        {`
+          @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+          }
+          @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(180deg); }
+          }
+          @keyframes cardHover {
+            0% { transform: translateY(0) scale(1); }
+            100% { transform: translateY(-10px) scale(1.02); }
+          }
+        `}
+      </style>
+
+      <div
+        className="card"
+        style={{
+          maxWidth: '1400px',
+          margin: '0 auto',
+          padding: '3rem 2.5rem',
+          background: 'rgba(255, 255, 255, 0.95)',
+          backdropFilter: 'blur(20px)',
+          boxShadow: '0 25px 50px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.8)',
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          borderRadius: '30px',
+          position: 'relative',
+          zIndex: 1,
+          minHeight: 'calc(100vh - 6rem)',
+          marginTop: '3rem',
+          marginBottom: '3rem'
+        }}
+      >
+        {/* Header */}
         <div style={{
           display: 'flex',
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between'
+          flexDirection: 'column',
+          gap: '1rem',
+          marginBottom: '3rem'
         }}>
-          <div>
-            <h1 style={{
-              fontSize: '2.2em',
-              fontWeight: 800,
-              color: '#6366f1',
-              margin: 0,
-              letterSpacing: '-1px'
-            }}>
-              DigiMart
-            </h1>
-            <p style={{ color: '#475569', margin: 0 }}>
-              Browse, purchase, and download digital products.
-            </p>
-          </div>
-          <div style={{ display: 'flex', gap: '1em' }}>
-            <button
-              onClick={() => navigate('/upload')}
-              style={{
-                background: 'linear-gradient(90deg, #6366f1 0%, #60a5fa 100%)',
-                color: '#fff',
-                border: 'none',
-                borderRadius: '8px',
-                padding: '0.7em 2em',
-                fontSize: '1.08em',
-                fontWeight: 600,
-                cursor: 'pointer',
-                boxShadow: '0 2px 8px rgba(99,102,241,0.10)',
-                transition: 'background 0.2s'
-              }}
-            >
-              <span role="img" aria-label="upload">📤</span> Upload Product
-            </button>
-            <button
-              onClick={() => {
-                logout();
-                navigate('/login');
-              }}
-              style={{
-                background: 'linear-gradient(90deg, #e11d48 0%, #f472b6 100%)',
-                color: '#fff',
-                border: 'none',
-                borderRadius: '8px',
-                padding: '0.7em 2em',
-                fontSize: '1.08em',
-                fontWeight: 600,
-                cursor: 'pointer',
-                boxShadow: '0 2px 8px rgba(225,29,72,0.10)',
-                transition: 'background 0.2s'
-              }}
-            >
-              <span role="img" aria-label="logout">🚪</span> Logout
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Alerts */}
-      {msg && (
-        <div
-          style={{
-            marginBottom: '1.2em',
-            borderRadius: '8px',
-            border: '1px solid #bbf7d0',
-            background: '#f0fdf4',
-            color: '#22c55e',
-            padding: '0.8em 1em',
-            fontWeight: 600,
-            textAlign: 'center'
-          }}
-        >
-          {msg}
-        </div>
-      )}
-      {err && (
-        <div
-          style={{
-            marginBottom: '1.2em',
-            borderRadius: '8px',
-            border: '1px solid #fecdd3',
-            background: '#fef2f2',
-            color: '#e11d48',
-            padding: '0.8em 1em',
-            fontWeight: 600,
-            textAlign: 'center'
-          }}
-        >
-          {err}
-        </div>
-      )}
-
-      {/* Content */}
-      {loading ? (
-        <div style={{ color: '#64748b', textAlign: 'center', fontSize: '1.1em' }}>Loading files…</div>
-      ) : files.length === 0 ? (
-        <div style={{ color: '#64748b', textAlign: 'center', fontSize: '1.1em' }}>No files available yet.</div>
-      ) : (
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-            gap: '2em'
-          }}
-        >
-          {files.map((file) => (
-            <div
-              key={file.id}
-              className="card"
-              style={{
-                background: '#fff',
-                borderRadius: '14px',
-                boxShadow: '0 2px 12px rgba(99,102,241,0.07)',
-                padding: '1.5em 1.2em',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                transition: 'transform 0.15s',
-                minHeight: 370
-              }}
-            >
-              {/* Thumbnail */}
-              <div
+          <div style={{
+            display: 'flex',
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '2rem'
+          }}>
+            <div>
+              <h1 style={{
+                fontSize: 'clamp(2.5rem, 5vw, 3.5rem)',
+                fontWeight: 900,
+                color: '#2c3e50',
+                margin: 0,
+                letterSpacing: '-0.03em',
+                fontFamily: "'Inter', 'Segoe UI', sans-serif"
+              }}>
+                Welcome, {username}!
+              </h1>
+              <p style={{ 
+                color: '#64748b', 
+                margin: '0.5rem 0 0 0',
+                fontSize: '1.2rem',
+                fontWeight: 500
+              }}>
+                Discover, purchase, and download premium digital products
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+              <button
+                onClick={() => navigate('/upload')}
                 style={{
-                  width: '100%',
-                  height: 140,
-                  background: '#f1f5f9',
-                  borderRadius: '8px',
+                  background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '16px',
+                  padding: '1rem 2rem',
+                  fontSize: '1.1rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  boxShadow: '0 8px 25px rgba(59, 130, 246, 0.25)',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center',
-                  marginBottom: 18
+                  gap: '0.5rem'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.transform = 'translateY(-3px) scale(1.02)';
+                  e.target.style.boxShadow = '0 12px 35px rgba(59, 130, 246, 0.35)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.transform = 'translateY(0) scale(1)';
+                  e.target.style.boxShadow = '0 8px 25px rgba(59, 130, 246, 0.25)';
                 }}
               >
-                <img
-                  src={iconFor(file.fileType || file.title)}
-                  alt="thumbnail"
-                  style={{ width: 64, height: 64, objectFit: 'contain' }}
-                />
-              </div>
-
-              {/* Details */}
-              <div style={{ width: '100%' }}>
-                <h3 style={{
-                  fontSize: '1.18em',
+                <span style={{ fontSize: '1.3rem' }}>📤</span> Upload Product
+              </button>
+              <button
+                onClick={() => {
+                  logout();
+                  navigate('/login');
+                }}
+                style={{
+                  background: 'linear-gradient(135deg, #64748b 0%, #475569 100%)',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '16px',
+                  padding: '1rem 2rem',
+                  fontSize: '1.1rem',
                   fontWeight: 700,
-                  color: '#22223b',
-                  marginBottom: 6,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap'
-                }}>
-                  {file.title}
-                </h3>
-                <div style={{ fontSize: '0.98em', color: '#64748b', margin: 0 }}>
-                  <p style={{ margin: 0 }}>Type: {file.fileType || '—'}</p>
-                  <p style={{ margin: 0 }}>Size: {readableSize(file.size)}</p>
-                  <p style={{
-                    fontSize: '1.05em',
-                    color: '#6366f1',
-                    fontWeight: 600,
-                    margin: '0.5em 0 0 0'
+                  cursor: 'pointer',
+                  boxShadow: '0 8px 25px rgba(100, 116, 139, 0.25)',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.transform = 'translateY(-3px) scale(1.02)';
+                  e.target.style.boxShadow = '0 12px 35px rgba(100, 116, 139, 0.35)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.transform = 'translateY(0) scale(1)';
+                  e.target.style.boxShadow = '0 8px 25px rgba(100, 116, 139, 0.25)';
+                }}
+              >
+                <span style={{ fontSize: '1.3rem' }}>🚪</span> Logout
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Alerts */}
+        {msg && (
+          <div
+            style={{
+              marginBottom: '2rem',
+              borderRadius: '20px',
+              border: '1px solid rgba(34, 197, 94, 0.3)',
+              background: 'rgba(240, 253, 244, 0.9)',
+              color: '#065f46',
+              padding: '1.5rem 2rem',
+              fontWeight: 600,
+              textAlign: 'center',
+              backdropFilter: 'blur(15px)',
+              boxShadow: '0 10px 30px rgba(34, 197, 94, 0.1)',
+              fontSize: '1.1rem'
+            }}
+          >
+            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>✅</div>
+            {msg}
+          </div>
+        )}
+        {err && (
+          <div
+            style={{
+              marginBottom: '2rem',
+              borderRadius: '20px',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              background: 'rgba(254, 242, 242, 0.9)',
+              color: '#991b1b',
+              padding: '1.5rem 2rem',
+              fontWeight: 600,
+              textAlign: 'center',
+              backdropFilter: 'blur(15px)',
+              boxShadow: '0 10px 30px rgba(239, 68, 68, 0.1)',
+              fontSize: '1.1rem'
+            }}
+          >
+            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>⚠️</div>
+            {err}
+          </div>
+        )}
+
+        {/* Content */}
+        {loading ? (
+          <div style={{ 
+            color: '#64748b', 
+            textAlign: 'center', 
+            fontSize: '1.3rem',
+            padding: '3rem'
+          }}>
+            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>⏳</div>
+            Loading amazing products…
+          </div>
+        ) : files.length === 0 ? (
+          <div style={{ 
+            color: '#64748b', 
+            textAlign: 'center', 
+            fontSize: '1.3rem',
+            padding: '3rem'
+          }}>
+            <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>📦</div>
+            No products available yet. Be the first to upload!
+          </div>
+        ) : (
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+              gap: '2.5rem',
+              padding: '1rem'
+            }}
+          >
+            {files.map((file) => (
+              <div
+                key={file.id}
+                className="card"
+                style={{
+                  background: 'rgba(255, 255, 255, 0.8)',
+                  backdropFilter: 'blur(20px)',
+                  borderRadius: '24px',
+                  boxShadow: '0 15px 35px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.9)',
+                  border: '1px solid rgba(255,255,255,0.5)',
+                  padding: '2rem 1.5rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                  minHeight: '420px',
+                  position: 'relative',
+                  overflow: 'hidden'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-15px) scale(1.03)';
+                  e.currentTarget.style.boxShadow = '0 25px 50px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.9)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                  e.currentTarget.style.boxShadow = '0 15px 35px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.9)';
+                }}
+              >
+                {/* Decorative corner element */}
+                <div style={{
+                  position: 'absolute',
+                  top: '-20px',
+                  right: '-20px',
+                  width: '80px',
+                  height: '80px',
+                  background: 'linear-gradient(135deg, rgba(59,130,246,0.1) 0%, transparent 100%)',
+                  borderRadius: '50%'
+                }}></div>
+
+                {/* Thumbnail */}
+                <div
+                  style={{
+                    width: '100%',
+                    height: '160px',
+                    background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+                    borderRadius: '16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: '1.5rem',
+                    border: '1px solid rgba(226,232,240,0.5)',
+                    position: 'relative',
+                    overflow: 'hidden'
+                  }}
+                >
+                  <div style={{
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    width: '120%',
+                    height: '120%',
+                    background: 'radial-gradient(circle, rgba(59,130,246,0.05) 0%, transparent 70%)',
+                    borderRadius: '50%'
+                  }}></div>
+                  <img
+                    src={iconFor(file.fileType || file.title)}
+                    alt="thumbnail"
+                    style={{ 
+                      width: '80px', 
+                      height: '80px', 
+                      objectFit: 'contain',
+                      filter: 'drop-shadow(0 4px 15px rgba(0,0,0,0.1))',
+                      position: 'relative',
+                      zIndex: 1
+                    }}
+                  />
+                </div>
+
+                {/* Details */}
+                <div style={{ width: '100%', textAlign: 'center' }}>
+                  <h3 style={{
+                    fontSize: '1.4rem',
+                    fontWeight: 800,
+                    color: '#1e293b',
+                    marginBottom: '1rem',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    letterSpacing: '-0.01em'
                   }}>
-                    Price: ₹{file.price}
-                  </p>
-                  {file.uploadedBy && (
-                    <p style={{ fontSize: '0.92em', color: '#64748b', margin: '0.2em 0 0 0' }}>
-                      Uploader: {file.uploadedBy}
+                    {file.title}
+                  </h3>
+                  <div style={{ fontSize: '1rem', color: '#64748b', margin: 0 }}>
+                    <p style={{ margin: '0.3rem 0' }}>
+                      📁 {file.fileType || '—'}
                     </p>
+                    <p style={{ margin: '0.3rem 0' }}>
+                      💾 {readableSize(file.size)}
+                    </p>
+                    <p style={{
+                      fontSize: '1.3rem',
+                      color: '#3b82f6',
+                      fontWeight: 800,
+                      margin: '1rem 0',
+                      background: 'rgba(59, 130, 246, 0.1)',
+                      borderRadius: '12px',
+                      padding: '0.5rem 1rem',
+                      border: '1px solid rgba(59, 130, 246, 0.2)'
+                    }}>
+                      💰 ₹{file.price}
+                    </p>
+                    {file.uploadedBy && (
+                      <p style={{ 
+                        fontSize: '0.9rem', 
+                        color: '#64748b', 
+                        margin: '0.5rem 0'
+                      }}>
+                        👤 {file.uploadedBy}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div style={{ marginTop: 'auto', width: '100%', paddingTop: '1.5rem' }}>
+                  {file.owned ? (
+                    <button
+                      onClick={() => handleDownload(null, file.id)}
+                      style={{
+                        background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '16px',
+                        padding: '1rem 0',
+                        fontSize: '1.2rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        width: '100%',
+                        boxShadow: '0 10px 25px rgba(16, 185, 129, 0.25)',
+                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.5rem'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.target.style.transform = 'translateY(-2px)';
+                        e.target.style.boxShadow = '0 15px 35px rgba(16, 185, 129, 0.35)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.target.style.transform = 'translateY(0)';
+                        e.target.style.boxShadow = '0 10px 25px rgba(16, 185, 129, 0.25)';
+                      }}
+                    >
+                      <span style={{ fontSize: '1.3rem' }}>⬇️</span> Download Now
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handlePurchase(file.id)}
+                      style={{
+                        background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '16px',
+                        padding: '1rem 0',
+                        fontSize: '1.2rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        width: '100%',
+                        boxShadow: '0 10px 25px rgba(99, 102, 241, 0.25)',
+                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.5rem'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.target.style.transform = 'translateY(-2px)';
+                        e.target.style.boxShadow = '0 15px 35px rgba(99, 102, 241, 0.35)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.target.style.transform = 'translateY(0)';
+                        e.target.style.boxShadow = '0 10px 25px rgba(99, 102, 241, 0.25)';
+                      }}
+                    >
+                      <span style={{ fontSize: '1.3rem' }}>🛒</span> Purchase Now
+                    </button>
                   )}
                 </div>
               </div>
-
-              {/* Actions */}
-              <div style={{ marginTop: '1.2em', width: '100%' }}>
-                {file.owned ? (
-                  <button
-                    onClick={() => handleDownload(file.downloadUrl, file.id)}
-                    style={{
-                      background: 'linear-gradient(90deg, #22c55e 0%, #4ade80 100%)',
-                      color: '#fff',
-                      border: 'none',
-                      borderRadius: '6px',
-                      padding: '0.7em 0',
-                      fontSize: '1.08em',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      width: '100%',
-                      boxShadow: '0 2px 8px rgba(34,197,94,0.08)',
-                      transition: 'background 0.2s'
-                    }}
-                  >
-                    <span role="img" aria-label="download">⬇️</span> Download
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => handlePurchase(file.id)}
-                    style={{
-                      background: 'linear-gradient(90deg, #6366f1 0%, #60a5fa 100%)',
-                      color: '#fff',
-                      border: 'none',
-                      borderRadius: '6px',
-                      padding: '0.7em 0',
-                      fontSize: '1.08em',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      width: '100%',
-                      boxShadow: '0 2px 8px rgba(99,102,241,0.08)',
-                      transition: 'background 0.2s'
-                    }}
-                  >
-                    <span role="img" aria-label="purchase">🛒</span> Purchase
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
 
 export default UserHome;
+                      

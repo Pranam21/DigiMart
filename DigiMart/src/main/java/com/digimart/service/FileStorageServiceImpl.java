@@ -50,7 +50,7 @@ public class FileStorageServiceImpl implements FileStorageService {
         String fileType = file.getContentType();
         long size = file.getSize();
         String fileName = UUID.randomUUID() + "_" + originalName;
-        Double cost = requestDto.getPrice();
+        double price = requestDto.getPrice();
 
         // Store on disk
         Path target = this.fileStorageLocation.resolve(fileName);
@@ -67,7 +67,7 @@ public class FileStorageServiceImpl implements FileStorageService {
         fileEntity.setFilename(fileName);
         fileEntity.setFileType(fileType);
         fileEntity.setFileSize(size);
-        fileEntity.setPrice(cost);          // no price in DTO, default to 0
+        fileEntity.setPrice(price);          // no price in DTO, default to 0
         fileEntity.setUploader(user);
 
         fileEntity = fileRepository.save(fileEntity); // ID generated here
@@ -79,6 +79,7 @@ public class FileStorageServiceImpl implements FileStorageService {
         meta.setFileType(fileType);
         meta.setFileSize(size);
         meta.setUploadedBy(user);
+        meta.setPrice(price);
         meta.setDownloadUrl("/api/files/" + fileEntity.getId() + "/download");
 
         fileMetadataRepository.save(meta);
@@ -88,7 +89,9 @@ public class FileStorageServiceImpl implements FileStorageService {
                 meta.getFileName(),
                 meta.getDownloadUrl(),
                 fileType,
-                size
+                size,
+                meta.getPrice()
+                
         );
     }
 

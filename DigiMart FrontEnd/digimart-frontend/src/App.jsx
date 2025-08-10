@@ -7,6 +7,7 @@ import PrivateRoute from './components/PrivateRoute';
 import UserHome from './pages/UserHome';
 import Register from './components/register';
 import UploadPage from './pages/UploadPage';
+import MockPayment from './pages/MockPayment';
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
       <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/payment/:fileId" element={<PrivateRoute><MockPayment /></PrivateRoute>} />
       
       {/* Protect home and admin */}
       <Route
@@ -21,27 +23,24 @@ function App() {
         element={
           <PrivateRoute requiredRole="USER">
             <UserHome />
-           </PrivateRoute>
+          </PrivateRoute>
         }
       />
       
       <Route path="/admin" element={
-         <PrivateRoute requiredRole ="ADMIN">
+        <PrivateRoute requiredRole="ADMIN">
           <AdminPage />
-         </PrivateRoute>
+        </PrivateRoute>
       } />
       <Route
-  path="/upload"
-  element={
-    <PrivateRoute requiredRole="USER">
-      <UploadPage />
-    </PrivateRoute>
-  }
-/>
-
-
+        path="/upload"
+        element={
+          <PrivateRoute requiredRole="USER">
+            <UploadPage />
+          </PrivateRoute>
+        }
+      />
     </Routes>
-    
   );
 }
 

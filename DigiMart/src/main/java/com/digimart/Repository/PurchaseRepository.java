@@ -22,7 +22,7 @@ public interface PurchaseRepository extends JpaRepository<Purchase, Long> {
 
 	List<Purchase> findByBuyer(User user);
 	
-	// Option B: explicit JPQL (avoids name pitfalls)
+	// explicit JPQL (avoids name pitfalls)
     @Query("select (count(p) > 0) from Purchase p where p.buyer.email = :email and p.file.id = :fileId")
     boolean existsByBuyerEmailAndFileId(@Param("email") String email, @Param("fileId") Long fileId);
 }

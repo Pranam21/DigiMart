@@ -20,6 +20,8 @@ public class FileMetadata extends BaseEntity {
     private Long fileSize;
 
     private String downloadUrl;
+    
+    private double price;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "uploaded_by")
