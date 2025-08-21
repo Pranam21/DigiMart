@@ -16,6 +16,19 @@ const Login = () => {
     }));
   };
 
+  const getErrorMessage = (err) => {
+  if (!err) return 'Login failed';
+  // Axios-style
+  const data = err.response?.data;
+  if (typeof data === 'string') return data;
+  if (data && (data.message || data.error || data.detail)) {
+    return data.message || data.error || data.detail;
+  }
+  // Fetch or generic Error
+  if (err.message) return err.message;
+  return 'Login failed';
+};
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -37,7 +50,7 @@ const Login = () => {
       }
 
     } catch (err) {
-      setError(err.response?.data || 'Login failed');
+      setError(getErrorMessage(err));
     }
   };
 

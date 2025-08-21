@@ -11,6 +11,7 @@ import com.digimart.Repository.UserRepository;
 import com.digimart.Repository.FileRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -27,6 +28,9 @@ public class FileStorageServiceImpl implements FileStorageService {
     private final UserRepository userRepository;
     private final PurchaseRepository purchaseRepository;
     private final FileRepository fileRepository;
+    
+    private final Path baseDir;
+    private final String publicPrefix;
 
     public FileStorageServiceImpl(@Value("${file.upload-dir}") String uploadDir,
                                   FileMetadataRepository fileMetadataRepository,
@@ -40,6 +44,8 @@ public class FileStorageServiceImpl implements FileStorageService {
 
         this.fileStorageLocation = Paths.get(uploadDir).toAbsolutePath().normalize();
         Files.createDirectories(this.fileStorageLocation);
+		this.baseDir = null;
+		this.publicPrefix = "";
     }
 
     @Override
@@ -132,5 +138,29 @@ public class FileStorageServiceImpl implements FileStorageService {
                 .canDownload(hasAccessToFile(meta.getId(), currentUserEmail))
                 .build())
             .collect(Collectors.toList());
+    }
+    
+    public String storeFile(MultipartFile file) throws IOException {
+        if (file == null || file.isEmpty()) {
+            throw new IOException("Empty file");
+        }
+
+        String original = StringUtils.cleanPath(file.getOriginalFilename() == null ? "" : file.getOriginalFilename());
+        String ext = "";
+        int dot = original.lastIndexOf('.');
+        if (dot >= 0 && dot < original.length() - 1) ext = original.substring(dot); // includes the dot
+
+        String storedName = UUID.randomUUID().toString().replace("-", "") + ext.toLowerCase();
+        Path target = baseDir.resolve(storedName);
+
+        // Avoid path traversal
+        if (!target.normalize().startsWith(baseDir)) {
+            throw new IOException("Invalid destination path");
+        }
+
+        Files.copy(file.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
+
+        // Return the public URL that FileController (below) serves
+        return publicPrefix + storedName;
     }
 }

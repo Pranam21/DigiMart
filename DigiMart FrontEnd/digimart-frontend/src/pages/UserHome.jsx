@@ -70,10 +70,10 @@ const UserHome = () => {
   };
 
   // ⬇️ CHANGED: redirect to mock payment page instead of purchasing immediately
-  const handlePurchase = (fileId) => {
+  const handlePurchase = (file) => {
     setMsg('');
     setErr('');
-    navigate(`/payment/${fileId}`);
+    navigate(`/payment/${file.id}`,  { state: { id: file.id, title: file.title, price: file.price }});
   };
 
   const handleDownload = async (downloadUrl, id) => {
@@ -214,6 +214,34 @@ const UserHome = () => {
               </p>
             </div>
             <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+              <button
+                onClick={() => navigate('/me')}
+                style={{
+                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '16px',
+                  padding: '1rem 2rem',
+                  fontSize: '1.1rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  boxShadow: '0 8px 25px rgba(16, 185, 129, 0.25)',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.transform = 'translateY(-3px) scale(1.02)';
+                  e.target.style.boxShadow = '0 12px 35px rgba(16, 185, 129, 0.35)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.transform = 'translateY(0) scale(1)';
+                  e.target.style.boxShadow = '0 8px 25px rgba(16, 185, 129, 0.25)';
+                }}
+              >
+                <span style={{ fontSize: '1.3rem' }}>👤</span> Profile
+              </button>
               <button
                 onClick={() => navigate('/upload')}
                 style={{
@@ -508,7 +536,7 @@ const UserHome = () => {
                     </button>
                   ) : (
                     <button
-                      onClick={() => handlePurchase(file.id)}
+                      onClick={() => handlePurchase(file)}
                       style={{
                         background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
                         color: '#ffffff',

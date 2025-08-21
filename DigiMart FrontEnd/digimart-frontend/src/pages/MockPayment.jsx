@@ -1,6 +1,6 @@
 // src/pages/MockPayment.jsx
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 
 const API = import.meta.env.VITE_API_BASE_URL;
@@ -13,7 +13,20 @@ export default function MockPayment() {
   const [err, setErr] = useState('');
 
   const token = localStorage.getItem('token');
-  const file = state || { id: fileId, title: `Item #${fileId}`, price: '—' };
+ // const file = state || { id: fileId, title: `Item #${fileId}`, price: '—' };
+
+  const [fileData, setFileData] = useState(state || null);
+
+useEffect(() => {
+  if (!state) {
+    axios
+      .get(`${API}/files/${fileId}`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => setFileData(r.data))
+     .catch(() => setFileData({ id: fileId, title: `Item #${fileId}`, price: null }));
+  }
+}, [fileId, state, token]);
+
+const file = fileData || { id: fileId, title: `Item #${fileId}`, price: '—' };
 
   const payNow = async () => {
     try {

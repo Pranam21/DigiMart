@@ -7,6 +7,8 @@ import com.digimart.dto.FileUploadResponseDto;
 import java.io.IOException;
 import java.util.List;
 
+import org.springframework.web.multipart.MultipartFile;
+
 public interface FileStorageService {
     FileUploadResponseDto uploadFile(FileUploadRequestDto requestDto, String userEmail) throws IOException;
     FileDownloadResponseDto downloadFile(Long fileId) throws IOException;
@@ -14,5 +16,7 @@ public interface FileStorageService {
 	
 	// FileStorageService.java
 	List<FileListItemDto> listFiles(String currentUserEmail);
+	
+	String storeFile(MultipartFile file) throws IOException;
 
 }

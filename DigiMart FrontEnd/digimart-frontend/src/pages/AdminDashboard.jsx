@@ -195,6 +195,7 @@ export default function AdminPage() {
               textAlign: 'center',
               cursor: 'pointer'
             }}
+            onClick={() => navigate('/admin/products')}
             onMouseEnter={(e) => {
               e.currentTarget.style.transform = 'translateY(-10px) scale(1.02)';
               e.currentTarget.style.boxShadow = '0 25px 50px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.9)';

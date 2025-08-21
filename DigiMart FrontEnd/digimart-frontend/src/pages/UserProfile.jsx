@@ -1,194 +1,167 @@
 // src/pages/UserProfile.jsx
-import { useEffect, useState } from "react";
-import axios from "axios";
-import { useAuth } from "../context/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
 
 const API = import.meta.env.VITE_API_BASE_URL;
 
+const formatDate = (s) => {
+  if (!s) return '—';
+  try {
+    const d = new Date(s);
+    return d.toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: '2-digit' });
+  } catch {
+    return s;
+  }
+};
+
 export default function UserProfile() {
   const [me, setMe] = useState(null);
-  const [username, setUsername] = useState("");
-  const [pwd, setPwd] = useState("");
-  const [msg, setMsg] = useState("");
-  const [err, setErr] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState('');
+  const nav = useNavigate();
   const { logout } = useAuth();
-  const navigate = useNavigate();
 
-  const auth = () => ({
-    headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-  });
-
-  const load = async () => {
-    try {
-      setErr(""); setMsg("");
-      const { data } = await axios.get(`${API}/users/me`, auth());
-      setMe(data); setUsername(data.username || "");
-    } catch (e) {
-      setErr(e.response?.data?.message || "Failed to load profile");
-      if ([401, 403].includes(e.response?.status)) { logout(); navigate("/login"); }
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      nav('/login', { replace: true, state: { from: '/me' } });
+      return;
     }
-  };
 
-  useEffect(() => { load(); }, []);
+    (async () => {
+      try {
+        setErr('');
+        setLoading(true);
+        const { data } = await axios.get(`${API}/users/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setMe(data);
+      } catch (e) {
+        const status = e?.response?.status;
+        if (status === 401 || status === 403) {
+          setErr('Forbidden. Your session may have expired or you lack permission.');
+        } else {
+          setErr(e?.response?.data?.message || 'Failed to load profile');
+        }
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [nav]);
 
-  const saveName = async () => {
-    try {
-      await axios.put(`${API}/users/me`, { username }, auth());
-      setMsg("Profile updated"); await load();
-    } catch (e) {
-      setErr(e.response?.data?.message || "Update failed");
-    }
-  };
+  const roleText = (() => {
+    if (!me) return '—';
+    const r = me.role ?? me.roles ?? me.authorities ?? me.scopes ?? me.scope;
+    if (Array.isArray(r)) return r.join(', ');
+    if (typeof r === 'string') return r.replace(/^ROLE_/, '');
+    return r ?? '—';
+  })();
 
-  const changePwd = async () => {
-    if (!pwd || pwd.length < 6) { setErr("Password must be at least 6 characters"); return; }
-    try {
-      await axios.put(`${API}/users/me/password`, { newPassword: pwd }, auth());
-      setPwd(""); setMsg("Password changed");
-    } catch (e) {
-      setErr(e.response?.data?.message || "Password change failed");
-    }
-  };
+  if (loading) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', color: '#64748b' }}>
+        <div style={{ fontSize: '1.25rem' }}>Loading profile… ⏳</div>
+      </div>
+    );
+  }
+
+  if (err) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center' }}>
+        <div style={{
+          padding: '1.25rem 1.5rem',
+          borderRadius: 12,
+          border: '1px solid rgba(239,68,68,.25)',
+          background: 'rgba(254,242,242,.8)',
+          color: '#991b1b',
+          maxWidth: 520,
+          textAlign: 'center',
+          fontWeight: 600
+        }}>
+          ⚠️ {err}
+          <div style={{ marginTop: 12 }}>
+            <button
+              onClick={() => nav(-1)}
+              style={{ marginRight: 8, padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0' }}
+            >
+              Go Back
+            </button>
+            <button
+              onClick={() => { logout?.(); localStorage.removeItem('token'); nav('/login', { replace: true }); }}
+              style={{ padding: '8px 12px', borderRadius: 8, border: 'none', background: '#334155', color: '#fff' }}
+            >
+              Login Again
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div
-      className="card"
-      style={{
-        maxWidth: '600px',
-        margin: '3em auto',
-        padding: '2.5em 2em',
-        background: 'linear-gradient(120deg, #f8fafc 0%, #e0e7ff 100%)',
-        boxShadow: '0 4px 32px rgba(99,102,241,0.10)',
-        border: 'none',
-        borderRadius: '18px'
-      }}
-    >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2em' }}>
-        <h2 style={{
-          margin: 0,
-          fontSize: '2em',
-          fontWeight: 800,
-          color: '#6366f1'
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #2c3e50 0%, #4f6989 100%)',
+      padding: '6rem 1rem',
+    }}>
+      <div style={{
+        maxWidth: 780, margin: '0 auto',
+        background: 'rgba(255,255,255,.95)', borderRadius: 24,
+        padding: '2rem', boxShadow: '0 20px 50px rgba(0,0,0,.15)'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+          <h1 style={{ margin: 0, fontSize: '2rem', color: '#1e293b', fontWeight: 900 }}>My Profile</h1>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <button
+              onClick={() => nav('/home')}
+              style={{ padding: '10px 14px', borderRadius: 10, border: '1px solid #e2e8f0', background: '#fff' }}
+            >
+              ⬅️ Back to Home
+            </button>
+            <button
+              onClick={() => { logout?.(); localStorage.removeItem('token'); nav('/login', { replace: true }); }}
+              style={{ padding: '10px 14px', borderRadius: 10, border: 'none', background: '#ef4444', color: '#fff' }}
+            >
+              🚪 Logout
+            </button>
+          </div>
+        </div>
+
+        <div style={{
+          display: 'grid', gridTemplateColumns: '120px 1fr', gap: 20, alignItems: 'center',
+          padding: '1rem', border: '1px solid #e2e8f0', borderRadius: 16, marginBottom: 20
         }}>
-          My Profile
-        </h2>
-        <button
-          onClick={() => navigate('/home')}
-          style={{
-            background: 'linear-gradient(90deg, #6366f1 0%, #60a5fa 100%)',
-            color: '#fff',
-            border: 'none',
-            borderRadius: '8px',
-            padding: '0.6em 1.5em',
-            fontSize: '1em',
-            fontWeight: 600,
-            cursor: 'pointer',
-            boxShadow: '0 2px 8px rgba(99,102,241,0.08)',
-            transition: 'background 0.2s'
-          }}
-        >
-          <span role="img" aria-label="home">🏠</span> Home
-        </button>
+          <div style={{
+            width: 120, height: 120, borderRadius: '50%',
+            background: 'linear-gradient(135deg,#93c5fd,#a5b4fc)',
+            display: 'grid', placeItems: 'center', color: '#fff', fontSize: 42, fontWeight: 800
+          }}>
+            {(me?.name || me?.username || me?.email || 'U').toString().charAt(0).toUpperCase()}
+          </div>
+          <div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: '#0f172a' }}>
+              {me?.name || me?.username || '—'}
+            </div>
+            <div style={{ color: '#334155', marginTop: 6 }}>{me?.email || '—'}</div>
+            <div style={{ color: '#475569', marginTop: 6 }}>Role: <strong>{roleText}</strong></div>
+            <div style={{ color: '#64748b', marginTop: 6 }}>Member since: {formatDate(me?.registrationDate)}</div>
+          </div>
+        </div>
+
+        {/* Extra info block (optional fields safe-accessed) */}
+        <div style={{
+          padding: '1rem', border: '1px solid #e2e8f0', borderRadius: 16,
+          background: '#f8fafc'
+        }}>
+          <div style={{ fontWeight: 700, color: '#0f172a', marginBottom: 8 }}>Account</div>
+          <div style={{ color: '#334155' }}>
+            <div>User ID: <strong>{me?.id ?? '—'}</strong></div>
+            {me?.status && <div>Status: <strong>{me.status}</strong></div>}
+          </div>
+        </div>
       </div>
-
-      {msg && <div style={ok}>{msg}</div>}
-      {err && <div style={bad}>{err}</div>}
-      
-      {!me ? (
-        <div style={{ color: '#64748b', textAlign: 'center', fontSize: '1.1em' }}>Loading…</div>
-      ) : (
-        <>
-          <div style={card}>
-            <div style={{ color: "#64748b", marginBottom: '0.5em', fontWeight: 500 }}>Email</div>
-            <div style={{ fontWeight: 600, color: '#22223b', fontSize: '1.1em' }}>{me.email}</div>
-          </div>
-
-          <div style={card}>
-            <label style={label}>Display Name</label>
-            <input style={input} value={username} onChange={e => setUsername(e.target.value)} />
-            <button onClick={saveName} style={{ ...btn, marginTop: '0.8em' }}>
-              <span role="img" aria-label="save">💾</span> Save
-            </button>
-          </div>
-
-          <div style={card}>
-            <label style={label}>New Password</label>
-            <input style={input} type="password" value={pwd} onChange={e => setPwd(e.target.value)} />
-            <button onClick={changePwd} style={{ ...btnSuccess, marginTop: '0.8em' }}>
-              <span role="img" aria-label="lock">🔐</span> Change Password
-            </button>
-          </div>
-        </>
-      )}
     </div>
   );
 }
-
-const card = { 
-  background: "#fff", 
-  border: "none", 
-  borderRadius: '14px', 
-  padding: '1.5em', 
-  marginBottom: '1.5em',
-  boxShadow: '0 2px 12px rgba(99,102,241,0.07)'
-};
-
-const label = { 
-  display: "block", 
-  fontSize: '0.95em', 
-  color: "#475569", 
-  fontWeight: 500,
-  marginBottom: '0.5em' 
-};
-
-const input = { 
-  width: "100%", 
-  padding: "0.7em", 
-  borderRadius: '8px', 
-  border: "1px solid #cbd5e1",
-  fontSize: '1em',
-  background: '#fff',
-  boxSizing: 'border-box'
-};
-
-const btn = { 
-  padding: "0.7em 1.5em", 
-  border: "none", 
-  borderRadius: '8px', 
-  background: 'linear-gradient(90deg, #6366f1 0%, #60a5fa 100%)', 
-  color: "#fff", 
-  cursor: "pointer",
-  fontWeight: 600,
-  fontSize: '1em',
-  boxShadow: '0 2px 8px rgba(99,102,241,0.08)',
-  transition: 'background 0.2s'
-};
-
-const btnSuccess = {
-  ...btn,
-  background: 'linear-gradient(90deg, #22c55e 0%, #4ade80 100%)',
-  boxShadow: '0 2px 8px rgba(34,197,94,0.08)'
-};
-
-const ok = { 
-  border: "1px solid #bbf7d0", 
-  background: "#f0fdf4", 
-  color: "#22c55e", 
-  padding: "0.8em 1em", 
-  borderRadius: '8px', 
-  marginBottom: '1.5em',
-  fontWeight: 600,
-  textAlign: 'center'
-};
-
-const bad = { 
-  border: "1px solid #fecdd3", 
-  background: "#fef2f2", 
-  color: "#e11d48", 
-  padding: "0.8em 1em", 
-  borderRadius: '8px', 
-  marginBottom: '1.5em',
-  fontWeight: 600,
-  textAlign: 'center'
-};

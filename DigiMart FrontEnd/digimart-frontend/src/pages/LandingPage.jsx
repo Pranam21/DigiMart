@@ -190,7 +190,7 @@ const LandingPage = () => {
               e.target.style.boxShadow = '0 8px 25px rgba(59, 130, 246, 0.25)';
             }}
           >
-            <span style={{ fontSize: '1.3rem' }}>🚀</span> Get Started
+            <span style={{ fontSize: '1.3rem' }}>🚀</span> Register
           </button>
           <button
             onClick={() => navigate('/login')}
